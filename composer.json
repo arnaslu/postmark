@@ -1,0 +1,24 @@
+{
+    "name": "arnaslu/postmark",
+    "type": "library",
+    "description": "Postmark PHP wrapper",
+    "keywords": ["postmark", "email"],
+    "homepage": "https://github.com/arnaslu/postmark",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Arnas Lukosevicius",
+            "email": "arnaslu@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "ext-curl": "*",
+        "guzzle/guzzle": "~3.8"
+    },
+    "autoload": {
+        "psr-0" : {
+            "Postmark" : "src/"
+        }
+    }
+}
