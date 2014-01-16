@@ -2,6 +2,8 @@
 
 namespace Postmark;
 
+use Postmark\Exception\PostmarkErrorException;
+use Guzzle\Common\Event;
 use Guzzle\Http\Client;
 use Guzzle\Http\Message\Request;
 
@@ -28,6 +30,8 @@ class Postmark
 		]);
 
 		$this->client = $client;
+
+		$this->_addErrorHandler();
 	}
 
 	public function send(Message $message)
@@ -92,10 +96,21 @@ class Postmark
 		return $result;
 	}
 
-	// TODO: Error handling
 	private function _sendRequest(Request $request)
 	{
 		$response = $request->send();
 		return $response->json();
+	}
+
+	private function _addErrorHandler()
+	{
+		$this->client->getEventDispatcher()->addListener('request.error', function(Event $event) {
+			if ($event['response']->getStatusCode() == 422)
+			{
+				$error = $event['response']->json();
+
+				throw new PostmarkErrorException($error['Message'], $error['ErrorCode']);
+			}
+		});
 	}
 }
