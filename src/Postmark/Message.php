@@ -1,122 +1,259 @@
 <?php
+/**
+ * This file is part of the Postmark package.
+ *
+ * PHP version 5.4
+ *
+ * @category Library
+ * @package  Postmark
+ * @author   Arnas Lukosevicius <arnaslu@gmail.com>
+ * @license  https://github.com/arnaslu/postmark/LICENSE.md MIT Licence
+ * @link     https://github.com/arnaslu/postmark
+ */
 
 namespace Postmark;
 
 use JsonSerializable;
 
+/**
+ * Message object for Postmark API wrapper. Implements JsonSerializable, so when
+ * passed through json_encode() function it will use it's jsonSerialize() function
+ * to return relevant data.
+ *
+ * @category Library
+ * @package  Postmark
+ * @author   Arnas Lukosevicius <arnaslu@gmail.com>
+ * @author   John Piasetzki <john@piasetzki.name>
+ * @license  https://github.com/arnaslu/postmark/LICENSE.md MIT Licence
+ * @link     https://github.com/arnaslu/postmark
+ */
 class Message implements JsonSerializable
 {
-	private $from;
-	private $to;
-	private $cc;
-	private $bcc;
-	private $subject;
-	private $tag;
-	private $htmlBody;
-	private $textBody;
-	private $replyTo;
-	private $headers = array();
-	private $attachments = array();
+    private $_from;
+    private $_to;
+    private $_cc;
+    private $_bcc;
+    private $_subject;
+    private $_tag;
+    private $_htmlBody;
+    private $_textBody;
+    private $_replyTo;
+    private $_headers = array();
+    private $_attachments = array();
 
-	public function addTo($address, $name = null)
-	{
-		$this->addAddress('to', $address, $name);
-	}
+    /**
+     * Adds "To" address
+     *
+     * @param string $address Receiver's email address
+     * @param string $name    Receiver's name
+     *
+     * @return void
+     */
+    public function addTo($address, $name = null)
+    {
+        $this->_addAddress('to', $address, $name);
+    }
 
-	public function addCc($address, $name = null)
-	{
-		$this->addAddress('cc', $address, $name);
-	}
+    /**
+     * Adds "CC" address
+     *
+     * @param string $address Receiver's email address
+     * @param string $name    Receiver's name
+     *
+     * @return void
+     */
+    public function addCc($address, $name = null)
+    {
+        $this->_addAddress('cc', $address, $name);
+    }
 
-	public function addBcc($address, $name = null)
-	{
-		$this->addAddress('bcc', $address, $name);
-	}
+    /**
+     * Adds "BCC" address
+     *
+     * @param string $address Receiver's email address
+     * @param string $name    Receiver's name
+     *
+     * @return void
+     */
+    public function addBcc($address, $name = null)
+    {
+        $this->_addAddress('bcc', $address, $name);
+    }
 
-	private function addAddress($type, $address, $name = null)
-	{
-		if (!empty($this->$type))
-		{
-			$this->$type .= ', ';
-		}
-		$this->$type .= $this->createAddress($address, $name);
-	}
+    /**
+     * Sets "Reply-To" address
+     *
+     * @param string $address Sender's email address
+     * @param string $name    Sender's name
+     *
+     * @return void
+     */
+    public function setReplyTo($address, $name = null)
+    {
+        $this->_replyTo = $this->_createAddress($address, $name);
+    }
 
-	public function setSubject($subject)
-	{
-		$this->subject = $subject;
-	}
+    /**
+     * Sets "From" address
+     *
+     * @param string $address Sender's email address
+     * @param string $name    Sender's name
+     *
+     * @return void
+     */
+    public function setFrom($address, $name = null)
+    {
+        $this->_from = $this->_createAddress($address, $name);
+    }
 
-	public function setTag($tag)
-	{
-		$this->tag = $tag;
-	}
+    /**
+     * Adds formatted email address (with optional name) in RFC 5322 format
+     *
+     * @param string $type    Address type ([to,cc,bcc])
+     * @param string $address Receiver's email address
+     * @param string $name    Receiver's name
+     *
+     * @return void
+     */
+    private function _addAddress($type, $address, $name = null)
+    {
+        $type = '_'.$type;
+        if (!empty($this->$type)) {
+            $this->$type .= ', ';
+        }
+        $this->$type .= $this->_createAddress($address, $name);
+    }
 
-	public function setHtmlBody($message)
-	{
-		$this->htmlBody = $message;
-	}
+    /**
+     * Sets message subject
+     *
+     * @param string $subject Email message subject line
+     *
+     * @return void
+     */
+    public function setSubject($subject)
+    {
+        $this->_subject = $subject;
+    }
 
-	public function setTextBody($message)
-	{
-		$this->textBody = $message;
-	}
+    /**
+     * Sets message tag (i.e. "registration", "order", etc.) Can be used for
+     * statistics.
+     *
+     * @param string $tag Email message tag
+     *
+     * @return void
+     */
+    public function setTag($tag)
+    {
+        $this->_tag = $tag;
+    }
 
-	public function setReplyTo($address, $name = null)
-	{
-		$this->replyTo = $this->createAddress($address, $name);
-	}
+    /**
+     * Sets message body in HTML format. Does not generate HTML itself, must receive
+     * already formatted HTML message as parameter.
+     *
+     * @param string $message Email body in HTML
+     *
+     * @return void
+     */
+    public function setHtmlBody($message)
+    {
+        $this->_htmlBody = $message;
+    }
 
-	public function addAttachment($name, $content, $contentType)
-	{
-		$this->attachments[] = [
-			'Name' => $name,
-			'Content' => base64_encode($content),
-			'ContentType' => $contentType
-		];
-	}
+    /**
+     * Sets message body in plain text format.
+     *
+     * @param string $message Email body in plain text
+     *
+     * @return void
+     */
+    public function setTextBody($message)
+    {
+        $this->_textBody = $message;
+    }
 
-	public function addHeader($name, $value)
-	{
-		$this->headers[] = array('Name' => $name, 'Value' => $value);
-	}
+    /**
+     * Adds file as message attachment.
+     *
+     * White-listed file extensions can be found in Postmark API documentation
+     *
+     * @param string $name        File's name (will be displayed to recipient)
+     * @param mixed  $content     File's contents
+     * @param string $contentType File's MIME content type (i.e. image/jpeg)
+     *
+     * @link http://developer.postmarkapp.com/developer-build.html#attachments
+     *
+     * @return void
+     */
+    public function addAttachment($name, $content, $contentType)
+    {
+        $this->_attachments[] = [
+            'Name' => $name,
+            'Content' => base64_encode($content),
+            'ContentType' => $contentType
+        ];
+    }
 
-	public function setFrom($address, $name = null)
-	{
-		$this->from = $this->createAddress($address, $name);
-	}
+    /**
+     * Adds custom header
+     *
+     * @param string $name  Header name
+     * @param string $value Header value
+     *
+     * @return void
+     */
+    public function addHeader($name, $value)
+    {
+        $this->_headers[] = array('Name' => $name, 'Value' => $value);
+    }
 
-	private function createAddress($address, $name = null)
-	{
-		if (!is_null($name))
-		{
-			if (1 === preg_match('/^[A-z0-9 ]*$/', $name))
-			{
-				return str_replace('"', '', $name) . ' <' . $address . '>';
-			}
+    /**
+     * Creates email address in RFC 5322 format
+     * for example "John Smith <sender@example.com>"
+     *
+     * @param string $address Email part of the address
+     * @param string $name    Name part of the address
+     *
+     * @return string
+     */
+    private function _createAddress($address, $name = null)
+    {
+        if (!is_null($name)) {
+            if (1 === preg_match('/^[A-z0-9 ]*$/', $name)) {
+                return str_replace('"', '', $name) . ' <' . $address . '>';
+            }
 
-			return '"' . str_replace('"', '', $name) . '" <' . $address . '>';
-		}
+            return '"' . str_replace('"', '', $name) . '" <' . $address . '>';
+        }
 
-		return $address;
-	}
+        return $address;
+    }
 
-	public function jsonSerialize()
-	{
-		$json = [
-			'From' => $this->from,
-			'To' => $this->to,
-			'Cc' => $this->cc,
-			'Bcc' => $this->bcc,
-			'Subject' => $this->subject,
-			'Tag' => $this->tag,
-			'HtmlBody' => $this->htmlBody,
-			'TextBody' => $this->textBody,
-			'ReplyTo' => $this->replyTo,
-			'Headers' => $this->headers,
-			'Attachments' => $this->attachments,
-		];
+    /**
+     * Specifies which data should be serialized when object is serialized to JSON
+     *
+     * @link http://www.php.net/manual/en/class.jsonserializable.php
+     *
+     * @return array
+     */
+    public function jsonSerialize()
+    {
+        $json = [
+            'From' => $this->_from,
+            'To' => $this->_to,
+            'Cc' => $this->_cc,
+            'Bcc' => $this->_bcc,
+            'Subject' => $this->_subject,
+            'Tag' => $this->_tag,
+            'HtmlBody' => $this->_htmlBody,
+            'TextBody' => $this->_textBody,
+            'ReplyTo' => $this->_replyTo,
+            'Headers' => $this->_headers,
+            'Attachments' => $this->_attachments,
+        ];
 
-		return array_filter($json);
-	}
+        return array_filter($json);
+    }
 }
